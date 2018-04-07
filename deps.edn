@@ -1,0 +1,6 @@
+
+{:deps
+ {org.clojure/clojurescript {:mvn/version "LATEST"} ;; 1.10.238
+  freactive {:mvn/version "LATEST"} ;; 0.1.0
+  org.clojure/core.async {:mvn/version "LATEST"} ;; "0.4.474"
+  }}

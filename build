@@ -1,0 +1,42 @@
+#_[
+ exec clojure "$0" "$@"
+]
+
+(def source-dir "src")
+
+(defn compiler-config [args]
+  (let [base-dir "."]
+  (prn :args args)
+  {:main 'init.index
+   :verbose true
+   :watch-fn (fn [] (println "Updated build" (java.time.LocalDateTime/now)))
+   :asset-path "out"
+   :output-dir (str base-dir "/out")
+   :output-to  (str base-dir "/index.js")
+   :source-map true
+   :optimizations :none ; :whitespace
+   :pretty-print true
+  }))
+
+;;; Task dispatching.
+
+(require '[cljs.build.api :as api])
+
+(defmulti task first)
+
+(defmethod task :default
+  [args]
+  (let [all-tasks  (-> task methods (dissoc :default) keys sort)
+        interposed (->> all-tasks (interpose ", ") (apply str))]
+    (println "Unknown or missing task. Choose one of:" interposed)
+    (System/exit 1)))
+
+(defmethod task "watch" [args]
+  (api/watch source-dir (compiler-config args)))
+
+(defmethod task "compile" [args]
+  (api/build source-dir (compiler-config args)))
+
+;;; Build script entrypoint. This should be the last expression.
+
+(task *command-line-args*)
