@@ -38,7 +38,13 @@
 (def extract-result
   #_(map #(-> % .-target .-result (s/split #"\n") count))
   #_(map #(-> % .-target .-result))
-  (map #(-> % .-target .-result (csv/parse nil ",") js->clj))
+  (map #(-> % .-target .-result
+            js/Int8Array.
+            ((fn [a] (js/String.fromCharCode.apply nil a)))
+            (csv/parse nil ",") 
+            js->clj
+            ))
+  #_(map #(-> % .-target .-result (csv/parse nil ",") js->clj))
   )
 
 ;; two core.async channels to take file array and then file and apply above transducers to them.
@@ -54,19 +60,13 @@
 (go-loop []
   (let [reader (js/FileReader.)
         file (<! upload-reqs)]
-    (set! (.-onload reader) #(put! file-reads %))
-    #_(set! (.-onloadend reader)
-          #(-> % .-target .-result
-               ((fn [a] (js/String.fromCharCode.apply nil (js/Uint16Array. a))))
-               #_((fn [r]
-                  (js/String.fromCharCode.apply
-                   (js/Int8Array. r))))
-               (prn :loop)))
+    #_(set! (.-onload reader) #(put! file-reads %))
+    (set! (.-onloadend reader) #(put! file-reads %))
 
-    (.readAsText reader file)
+    #_(.readAsText reader file)
     #_(.readAsBinaryString reader file)
     #_(.readAsDataURL reader file)
-    #_(.readAsArrayBuffer reader file)
+    (.readAsArrayBuffer reader file)
     (recur)))
 
 ;; sit around in a loop waiting for a string to appear in the file-reads channel and put it in the state atom to be read by reagent and rendered on the page.
@@ -77,14 +77,15 @@
 
 ;; input component to allow users to upload file.
 (defn input-component []
-  [:input {:type "file" :id "file" :accept ".csv;.txt" :name "file" :on-change put-upload}])
+  [:input {:type "file" ;; :id "file" :accept ".csv" :name "file"
+           :on-change put-upload}])
 
 ;; ------------------------- 
 ;; Views
 
 (defn view []
   [:div
-   [:h2 "Welcome to Freactive"]
+   [:p "Read csv file"]
    (input-component)
    (rx
     (do
@@ -116,7 +117,9 @@
    (let [root
          (dom/append-child! (.-body js/document) [:div#root])]
 
-     (aset js/document "title" "new title")
+     (aset js/document "title" "Read csv by cljs")
+
      (dom/mount! root (view))
-     (log1 "onload")
+
+     (log1 "page has been mounted")
      )))
