@@ -1,22 +1,43 @@
 #_[
- exec clojure "$0" "$@"
+ clojure -Sdescribe 
+
+ echo
+
+ exec clojure -Sverbose "$0" "$@"
+
+ "Local Variables:"
+ "Mode: clojure"
+ "End:"
 ]
 
 (def source-dir "src")
 
 (defn compiler-config [args]
   (let [base-dir "."]
-  (prn :args args)
-  {:main 'init.index
-   :verbose true
-   :watch-fn (fn [] (println "Updated build" (java.time.LocalDateTime/now)))
-   :asset-path "out"
-   :output-dir (str base-dir "/out")
-   :output-to  (str base-dir "/index.js")
-   :source-map true
-   :optimizations :none ; :whitespace
-   :pretty-print true
-  }))
+
+    (println :base-dir base-dir :args args "\n")
+
+    (merge
+
+     {:main 'init.index
+      :verbose true
+      :watch-fn
+      (fn []
+        (println "\n\nUpdated build"
+                 (str (java.time.LocalDateTime/now))))
+      :output-dir (str base-dir "/out")
+      :output-to  (str base-dir "/index.js")
+      }
+
+     (cond (= "advanced" (first args))
+           {:optimizations :advanced}
+
+           :else
+           {:asset-path "out"
+            :optimizations :none
+            :source-map true
+            :pretty-print true
+            }))))
 
 ;;; Task dispatching.
 
@@ -35,6 +56,9 @@
   (api/watch source-dir (compiler-config args)))
 
 (defmethod task "compile" [args]
+  (api/build source-dir (compiler-config args)))
+
+(defmethod task "advanced" [args]
   (api/build source-dir (compiler-config args)))
 
 ;;; Build script entrypoint. This should be the last expression.
