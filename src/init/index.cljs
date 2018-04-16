@@ -34,6 +34,34 @@
             (aget file "size"))
            file))))
 
+#_(defn file-parser [f]
+  (try
+    (-> f
+        (csv/parse f nil ",")
+        js->clj)
+    (catch Exception e
+      (prn :err e))))
+
+;; no error report
+(defn file-parser [f]
+  (-> f
+      (csv/parse f nil ",")
+      js->clj))
+
+;; error report
+#_(defn file-parser [f]
+  (-> f
+      (csv/parse nil ",")
+      js->clj))
+
+#_(defn file-parser [f]
+  (-> 
+   (try
+     (csv/parse f nil ",")
+     (catch :default e
+       (prn :err e)))
+   js->clj))
+
 ;; transducer to get text out of file object.
 (def extract-result
   #_(map #(-> % .-target .-result (s/split #"\n") count))
@@ -47,7 +75,8 @@
             #_(csv/parse nil ",") 
             #_js->clj
             ))
-  (map #(-> % .-target .-result (csv/parse nil ",") js->clj))
+  #_(map #(-> % .-target .-result (csv/parse nil ",") js->clj))
+  (map #(-> % .-target .-result file-parser))
   )
 
 ;; two core.async channels to take file array and then file and apply above transducers to them.
@@ -63,6 +92,15 @@
 (go-loop []
   (let [reader (js/FileReader.)
         file (<! upload-reqs)]
+
+    (set! (.-onprogress reader)
+          (fn [e]
+            (let [loaded (.-loaded e)
+                  total  (.-total e)
+                  percent (* 100 (/ loaded total))]
+              (prn :progress total percent loaded)
+              )))
+
     (set! (.-onload reader) #(put! file-reads %))
     #_(set! (.-onloadend reader) #(put! file-reads %))
 
