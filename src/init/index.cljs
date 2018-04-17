@@ -4,7 +4,8 @@
             [freactive.dom :as dom]
             [clojure.string :as s]
             [cljs.core.async :refer [put! chan <! >!]])
-  (:import [goog.labs.format csv])
+  (:import [goog.labs.format csv]
+           [goog.labs.format.csv ParseError])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]
                    [freactive.macros :refer [rx]]))
 
