@@ -43,16 +43,22 @@
       (prn :err e))))
 
 ;; no error report
-(defn file-parser [f]
+#_(defn file-parser [f]
   (-> f
-      (csv/parse f nil ",")
+      (csv/parse :ignore-error ",")
       js->clj))
 
 ;; error report
-#_(defn file-parser [f]
-  (-> f
-      (csv/parse nil ",")
-      js->clj))
+(defn file-parser [f]
+  (try
+    (-> f
+        (csv/parse nil ",")
+        js->clj)
+    (catch csv/ParseError e
+      (let [msg (.-message e)]
+        (println :err msg)
+        msg
+        ))))
 
 #_(defn file-parser [f]
   (-> 
@@ -101,8 +107,8 @@
               (prn :progress total percent loaded)
               )))
 
-    (set! (.-onload reader) #(put! file-reads %))
-    #_(set! (.-onloadend reader) #(put! file-reads %))
+    #_(set! (.-onload reader) #(put! file-reads %))
+    (set! (.-onloadend reader) #(put! file-reads %))
 
     (.readAsText reader file)
     #_(.readAsBinaryString reader file)
